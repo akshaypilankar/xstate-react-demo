@@ -1,5 +1,11 @@
-import { createMachine } from "xstate";
-const appMachine = Machine({
+import { createMachine, assign } from "xstate";
+import { fetchUser } from "./apis";
+
+interface Context {
+  user: Record<string, unknown>;
+}
+
+export const appMachine = createMachine({
   id: "app",
   initial: "init",
   context: {
@@ -7,9 +13,16 @@ const appMachine = Machine({
   },
   states: {
     init: {
-      on: {
-        AUTH: "auth",
-        PROFILE: "profile"
+      invoke: {
+        id: "saveEmailResetPassword",
+        src: (context: Context) => fetchUser(),
+        onDone: {
+          target: "profile",
+          actions: assign({ user: (_, event: any) => event.user })
+        },
+        onError: {
+          target: "auth"
+        }
       }
     },
     auth: {
